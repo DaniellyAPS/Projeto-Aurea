@@ -1,0 +1,35 @@
+function intervalo(φ ::Function)
+    α = 1e-8
+    a, b, s = 0, 2*α, α
+    while φ(b)<φ(s)
+        a, s, b = s, b, 2b
+    end
+    return a, b
+end
+
+function Secao_Aurea(φ ::Function; limk = 100 , ϵ = 1e-4 )
+    a,b = intervalo(φ)
+    θ_1= (3-sqrt(5))/2
+    θ_2= (-1+sqrt(5))/2
+    u= a + θ_1*(b-a)
+    v= a + θ_2*(b-a)
+    k = 1
+    fu, fv = φ(u), φ(v)
+    while abs(b-a) > ϵ && k < limk
+        if fu<fv
+            b, fv = v, fu
+            v = u
+            u = a + θ_1*(b-a)
+            fu = φ(u)
+        else
+            a, fu = u, fv
+            u = v
+            v = a + θ_2*(b-a)
+            fv = φ(v)
+        end
+        k += 1
+    end
+    A = [φ(a), φ(u), φ(v), φ(b)]
+    dicio = Dict(A[1] => a, A[2] => u, A[3] => v, A[4] => b)
+    return dicio[minimum(A)]
+end
