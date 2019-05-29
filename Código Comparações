@@ -1,0 +1,240 @@
+using Printf, Plots
+pyplot(size=(370,270))
+function a(x)
+    if 0<= x <= MathConstants.pi
+        return cos(x)
+    else
+        return (x-MathConstants.pi)-1
+    end
+end
+
+function c(x)
+    return (-2x)/(1+x^2)^2
+end
+
+function b(x)
+    return exp(x-exp(1)) - x + exp(1)
+end
+function d(x)
+    return(abs(-4 + x +sin(3(x-4)/4)))
+end
+function e(x)
+    if 0 <= x <= BigFloat(6)
+        return BigFloat(2) + BigFloat(sin(BigFloat(x) + BigFloat(2)))/BigFloat(log(BigFloat(x) + BigFloat(2)))
+    else
+        return (BigFloat(x) - BigFloat(6))^2 + BigFloat(2.48)
+    end
+end
+
+function f(x)
+    return (x)^6 - 3(-x^5) + 6(x^4) + 20(-x^3) - x
+end
+
+function g(x)
+    return (BigFloat(x)-BigFloat(2))^2 + BigFloat(4)
+end
+function h(x)
+    if 0<= x <= 20
+        return -(x-18)^3 + 8
+    else
+        return -(34*atan(x-20))/(x-19)
+    end
+end
+function i(x)
+    return (x+4)*(x+1)*(x-1)*(x-2)/20
+end
+function j(x)
+    if 0<= x <= 2
+        return MathConstants.e^(-x)
+    else
+        return (x - 2 + MathConstants.e^(-2))
+    end
+end
+function k(x)
+    return -12*sin(x - 1.89) + (x - 1.89)^2
+end
+function l(x)
+    if x <= 10
+        return -x
+    elseif 10 < x < 11
+        return - 10
+    else
+        return x-21
+    end
+end
+function m(x)
+    return abs(MathConstants.e^((x-9)^2-(x-9)^3)-x-9)
+end
+
+func = [a, b, c, d, e, f, g, h, i, j, k, l]
+funcval = [MathConstants.pi, MathConstants.e, 1/sqrt(3), 4, BigFloat(2.56933246205169214815), BigFloat(1.19915499721912693470) , 2, BigFloat(21.22913364222171637180), BigFloat(1.56970497975307382105), 2, BigFloat(3.23475104537569968834), 10]
+function intervalo(φ ::Function)
+    α = 1e-8
+    a, b, s = 0, 2*α, α
+    while φ(b)<φ(s)
+        a, s, b = s, b, 2b
+    end
+    return a, b
+end
+
+function Secao_Aurea(φ ::Function, a, b; limk = 100 , ϵ = 1e-4 )
+    θ_1= (3-sqrt(5))/2
+    θ_2= (-1+sqrt(5))/2
+    u= a + θ_1*(b-a)
+    v= a + θ_2*(b-a)
+    k = 1
+    fu, fv = φ(u), φ(v)
+    while abs(b-a) > ϵ && k < limk
+        if fu<fv
+            b, fv = v, fu
+            v = u
+            u = a + θ_1*(b-a)
+            fu = φ(u)
+        else
+            a, fu = u, fv
+            u = v
+            v = a + θ_2*(b-a)
+            fv = φ(v)
+        end
+        k += 1
+    end
+    A = [φ(a), φ(u), φ(v), φ(b)]
+    dicio = Dict(A[1] => a, A[2] => u, A[3] => v, A[4] => b)
+    return dicio[minimum(A)], k
+end
+
+
+function secao_33(φ ::Function, a , b; limk = 100 , ϵ = 1e-4)
+    k = 1
+    fu, fv = φ((2a+b)/3), φ((a+2b)/3)
+    while abs(b-a) > ϵ && k < limk
+        if fu<fv
+            b = (a+2b)/3
+            fu = φ((2a+b)/3)
+            fv = φ((a+2b)/3)
+        else
+            a = (2a+b)/3
+            fu = φ((2a+b)/3)
+            fv = φ((a+2b)/3)
+        end
+        k += 1
+        if k > 100_000
+            error("Número de interações")
+        end
+    end
+    A = [φ(a), φ((2a+b)/3), φ((a+2b)/3), φ(b)]
+    dicio = Dict(A[1] => a, A[2] => (2a+b)/3 , A[3] => (a+2b)/3, A[4] => b)
+    return dicio[minimum(A)], k
+end
+
+function secao_aleatoria(φ ::Function, a, b ; limk = 100, ϵ = 1e-4)
+    k =  1
+    #pego um float random em [0,1) e faço cair no intervalo (a,b)
+    u, v = rand(1,2)*(b - a) + [a a]
+    fu, fv = φ((u)), φ((v))
+    while abs(b-a) > ϵ && k < limk
+        if u >= v #pra ficar a<u<v<b
+            u,v,fu,fv = v,u,fv,fu
+        end
+        if fu<fv
+            b = v
+            v = rand()*(b - a) + a
+            fv = φ(v)
+        else
+            a = u
+            u = rand()*(b - a) + a
+            fu = φ(u)
+        end
+        k += 1
+    end
+    A = [φ(a), φ(u), φ(v), φ(b)]
+    dicio = Dict(A[1] => a, A[2] => u, A[3] => v, A[4] => b)
+    return dicio[minimum(A)], k
+    end 
+
+function imagens()
+    pyplot(size=(370,270))
+    for f in func
+        a0, b0 = intervalo(f)
+        plot(f, a0, b0,label= string(f,"(x)"))
+        Plots.png(string(f))
+    end
+end
+
+function tabela(func=func, funcval = funcval)
+    @printf("%5s | %5s | %5s | %5s | %5s | %5s| %5s\n","Função","Áurea" ,"Equi", "Rand", "Int Áu","Int Equi","Int Rand")
+    @printf("%5s | %6s | %6s | %6s | %6s | %6s| %6s\n", "-"^5,"-"^5, "-"^5, "-"^5,"-"^5, "-"^5, "-"^5)
+    for i = 1:length(func)
+        p, minimo = func[i], funcval[i]
+        a, b = intervalo(p)
+        minimoA , nA = Secao_Aurea(p, a, b)
+        minimo3 , n3 = secao_33(p, a, b)
+        minimoR , nR = secao_aleatoria(p, a, b)
+        #pego quantas casas de precisão o minimo encontrado está do real.
+        #println(abs(minimoA-minimo))
+        #println(minimoA)
+        minimoA = parse(Int,string(abs(minimoA-minimo))[end]) - 1
+        minimo3 = parse(Int,string(abs(minimo3-minimo))[end]) - 1
+        minimoR = parse(Int,string(abs(minimoR-minimo))[end]) - 1
+        @printf("%5s |%6s | %6s | %6s | %6s | %6s | %6s\n",string(p,"(x)"), minimoA, minimo3, minimoR ,nA, n3, nR)
+    end
+    return  
+end
+
+
+function grafico_aprox(fu,number, funcval = funcval)
+    minimo = funcval[number]
+    matriy = zeros(3,1)
+    eiXo = ones(1)
+    a1, b1 = intervalo(fu)
+    for i = 1:2:100
+        minimoA , nA = Secao_Aurea(fu, a1, b1, limk = i)
+        minimo3 , n3 = secao_33(fu, a1, b1, limk = i)
+        minimoR , nR = secao_aleatoria(fu, a1, b1, limk = i)
+        matriy = [matriy abs.([minimoA, minimo3, minimoR].- minimo)]
+        eiXo = [eiXo [i]]
+    end
+    vA, v3, vR = matriy[1,2:51], matriy[2,2:51], matriy[3,2:51]
+    eiXo = eiXo[2:51]
+    plot(yaxis = :log, xlabel = "Número de Interações", ylabel = "Erro")
+    xlims!(0,50)
+    scatter!(eiXo, vA, markersize=6, c=:orange, lab="Áurea")
+    scatter!(eiXo, v3, markersize=6, c=:green, lab="Equidistante")
+    scatter!(eiXo, vR, markersize=6, c=:pink, lab="Random")
+    end
+
+function Secao_Min(φ ::Function)
+    α = BigFloat(1e-8)
+    a, b, s = BigFloat(0), BigFloat(2)*α, α
+    while φ(b)<φ(s)
+        a, s, b = s, b, 2b
+    end
+    ϵ = BigFloat(1e-12)
+    θ_1= (BigFloat(3)-BigFloat(sqrt(BigFloat(5))))/BigFloat(2)
+    θ_2= (BigFloat(-1)+BigFloat(sqrt(BigFloat(5))))/BigFloat(2)
+    u = a + θ_1*(b-a)
+    v = a + θ_2*(b-a)
+    k = 1
+    fu, fv = BigFloat(φ(u)), BigFloat(φ(v))
+    while abs(b-a) > ϵ 
+        if fu<fv
+            b, fv = v, fu
+            v = u
+            u = a + θ_1*(b-a)
+            fu = φ(u)
+        else
+            a, fu = u, fv
+            u = v
+            v = a + θ_2*(b-a)
+            fv = φ(v)
+        end
+        k += 1
+    end
+    A = [φ(a), φ(u), φ(v), φ(b)]
+    dicio = Dict(A[1] => a, A[2] => u, A[3] => v, A[4] => b)
+    return dicio[minimum(A)], k
+    end
+
+imagens()
+
+tabela()
